@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Skill documentation is not application UI. */
+@source not "../.agents";
+
+@theme {
+  --color-background: #f7f8f5;
+  --color-foreground: #202923;
+  --color-card: #ffffff;
+  --color-card-foreground: #202923;
+  --color-muted: #edf0e9;
+  --color-muted-foreground: #59665d;
+  --color-primary: #245c45;
+  --color-primary-foreground: #ffffff;
+  --color-primary-hover: #1b4835;
+  --color-accent: #edf4ec;
+  --color-accent-foreground: #245c45;
+  --color-success: #edf4ec;
+  --color-success-foreground: #245c45;
+  --color-warning: #fff3df;
+  --color-warning-foreground: #865218;
+  --color-destructive: #a93632;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #dce2da;
+  --color-input: #7b887c;
+  --color-ring: #245c45;
+
+  --radius-control: 0.5rem;
+  --radius-panel: 0.75rem;
+  --spacing-control: 2.75rem;
+  --container-app: 80rem;
+  --container-reading: 45rem;
+  --default-transition-duration: 160ms;
+
+  /* ATS Classic stays independent of the app's brand styling. */
+  --color-cv-background: #ffffff;
+  --color-cv-foreground: #000000;
+  --font-cv: Carlito, Calibri, Arial, sans-serif;
+  --text-cv-body: 11pt;
+  --text-cv-body--line-height: 1.25;
+  --text-cv-name: 22pt;
+  --text-cv-name--line-height: 1.15;
+  --text-cv-heading: 11pt;
+  --text-cv-heading--line-height: 1.25;
+  --text-cv-heading--font-weight: 700;
+  --spacing-cv-width: 215.9mm;
+  --spacing-cv-height: 279.4mm;
+  --spacing-cv-margin: 14.82mm;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@font-face {
+  font-family: Carlito;
+  src: url("/fonts/Carlito-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Carlito;
+  src: url("/fonts/Carlito-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+
+@layer base {
+  button:not(:disabled),
+  select,
+  summary {
+    cursor: pointer;
+  }
+  input[type="checkbox"] {
+    accent-color: var(--color-primary);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-ring);
+    outline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --default-transition-duration: 0ms;
+  }
 }
