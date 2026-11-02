@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   /* config options here */
   distDir: process.env.CVRAGA_TEST_SERVER === "1" ? ".next-test" : ".next",
   cacheComponents: true,
