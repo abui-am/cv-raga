@@ -1,0 +1,331 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ApplicationStatus {
+  Saved
+  Applied
+  Interview
+  Offer
+  Rejected
+  Withdrawn
+}
+
+model Profile {
+  ownerId   String   @default("unassigned")
+  id        String   @id @default("main")
+  revision  Int      @default(1)
+  content   Json
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, id])
+}
+
+model Source {
+  ownerId     String     @default("unassigned")
+  id          String     @id @default(cuid())
+  name        String
+  text        String
+  storagePath String?
+  createdAt   DateTime   @default(now())
+  evidence    Evidence[]
+
+  @@unique([ownerId, id])
+}
+
+model Evidence {
+  ownerId        String         @default("unassigned")
+  id             String         @id @default(cuid())
+  title          String
+  kind           String
+  text           String
+  tags           String[]
+  confirmed      Boolean        @default(false)
+  revision       Int            @default(1)
+  sourceId       String?
+  importKey      String?
+  careerEntryId  String?
+  consolidatedAt DateTime?
+  source         Source?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  openQuestions  OpenQuestion[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([ownerId, importKey])
+  @@unique([ownerId, id])
+  @@index([confirmed, updatedAt])
+  @@index([sourceId])
+  @@index([careerEntryId])
+}
+
+model OpenQuestion {
+  ownerId    String    @default("unassigned")
+  id         String    @id @default(cuid())
+  question   String
+  status     String    @default("unsure")
+  evidenceId String?
+  evidence   Evidence? @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now())
+
+  @@unique([ownerId, id])
+  @@index([status, createdAt])
+}
+
+model Application {
+  ownerId             String            @default("unassigned")
+  id                  String            @id @default(cuid())
+  company             String
+  role                String
+  workMode            String            @default("")
+  location            String            @default("")
+  posting             String
+  postingRevision     Int               @default(1)
+  revision            Int               @default(1)
+  requirements        Json
+  url                 String
+  notes               String
+  status              ApplicationStatus @default(Saved)
+  appliedDate         String
+  nextActionDate      String
+  submittedRevisionId String?
+  submittedRevision   CvRevision?       @relation("SubmittedCv", fields: [submittedRevisionId], references: [id], onDelete: SetNull)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  history             StatusEvent[]
+  cvs                 Cv[]
+
+  @@unique([ownerId, id])
+  @@index([status, updatedAt])
+  @@index([submittedRevisionId])
+}
+
+model StatusEvent {
+  ownerId       String            @default("unassigned")
+  id            String            @id @default(cuid())
+  applicationId String
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status        ApplicationStatus
+  createdAt     DateTime          @default(now())
+
+  @@unique([ownerId, id])
+  @@index([applicationId, createdAt])
+}
+
+model Cv {
+  ownerId         String        @default("unassigned")
+  id              String        @id @default(cuid())
+  title           String
+  template        String        @default("ats-classic-v1")
+  applicationId   String?
+  application     Application?  @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  currentRevision Int           @default(1)
+  profileRevision Int
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  revisions       CvRevision[]
+  suggestions     Suggestion[]
+  assessments     Assessment[]
+  coverLetters    CoverLetter[]
+  reviewRuns      ReviewRun[]
+  exportChecks    ExportCheck[]
+  messages        CvMessage[]
+
+  @@unique([ownerId, id])
+  @@index([applicationId, updatedAt])
+}
+
+model CvRevision {
+  ownerId      String        @default("unassigned")
+  id           String        @id @default(cuid())
+  cvId         String
+  cv           Cv            @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  number       Int
+  content      Json
+  reason       String
+  createdAt    DateTime      @default(now())
+  submittedFor Application[] @relation("SubmittedCv")
+
+  @@unique([ownerId, id])
+  @@unique([cvId, number])
+}
+
+model Suggestion {
+  ownerId         String   @default("unassigned")
+  id              String   @id @default(cuid())
+  cvId            String
+  cv              Cv       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  baseRevision    Int
+  postingRevision Int
+  target          String
+  original        String
+  proposed        String
+  rationale       String
+  sources         Json
+  status          String   @default("pending")
+  createdAt       DateTime @default(now())
+
+  @@unique([ownerId, id])
+  @@index([cvId, createdAt])
+}
+
+model Assessment {
+  ownerId         String   @default("unassigned")
+  id              String   @id @default(cuid())
+  cvId            String
+  cv              Cv       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  cvRevision      Int
+  applicationId   String
+  postingRevision Int
+  rubric          String
+  score           Int
+  result          Json
+  createdAt       DateTime @default(now())
+
+  @@unique([ownerId, id])
+  @@index([cvId, cvRevision, postingRevision, rubric])
+}
+
+model CoverLetter {
+  ownerId         String      @default("unassigned")
+  id              String      @id @default(cuid())
+  cvId            String
+  cv              Cv          @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  number          Int
+  cvRevision      Int
+  postingRevision Int
+  content         Json
+  status          String      @default("draft")
+  evidenceQuotes  String[]
+  createdAt       DateTime    @default(now())
+  reviewRuns      ReviewRun[]
+
+  @@unique([ownerId, id])
+  @@unique([cvId, number])
+}
+
+model ReviewRun {
+  ownerId         String       @default("unassigned")
+  id              String       @id @default(cuid())
+  cvId            String
+  cv              Cv           @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  cvRevision      Int
+  postingRevision Int
+  coverLetterId   String?
+  coverLetter     CoverLetter? @relation(fields: [coverLetterId], references: [id], onDelete: SetNull)
+  rubric          String
+  model           String
+  results         Json
+  improvement     Json?
+  createdAt       DateTime     @default(now())
+
+  @@unique([ownerId, id])
+  @@index([cvId, cvRevision, postingRevision, createdAt])
+  @@index([coverLetterId])
+}
+
+model CvMessage {
+  ownerId    String   @default("unassigned")
+  id         String   @id @default(cuid())
+  cvId       String
+  cv         Cv       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  role       String
+  text       String
+  cvRevision Int
+  createdAt  DateTime @default(now())
+
+  @@unique([ownerId, id])
+  @@index([cvId, createdAt])
+}
+
+model Repository {
+  ownerId   String   @default("unassigned")
+  id        String   @id @default(cuid())
+  name      String
+  path      String
+  createdAt DateTime @default(now())
+
+  @@unique([ownerId, path])
+  @@unique([ownerId, id])
+}
+
+model ExportCheck {
+  ownerId    String   @default("unassigned")
+  id         String   @id @default(cuid())
+  cvId       String
+  cv         Cv       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  cvRevision Int
+  version    String
+  result     Json
+  createdAt  DateTime @default(now())
+
+  @@unique([ownerId, id])
+  @@unique([cvId, cvRevision, version])
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+}
